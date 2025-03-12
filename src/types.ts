@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 export interface Player {
   id: string;
   name: string;
-  score: number
+  score?: number;
 }
 
 export interface Team {

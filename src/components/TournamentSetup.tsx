@@ -37,53 +37,80 @@ const TournamentSetup: React.FC<{ route: any }> = () => {
     setPlayers(players.filter(player => player.id !== id));
   };
 
-  const generateRounds = (players: Player[]): Match[][] => {
-    const rounds: Match[][] = [];
+  const generateRounds = (players: Player[], courts: number): Match[][] => {
     const n = players.length;
-    const totalRounds = n - 1;
+    const totalRounds = n % 2 === 0 ? n - 1 : n; // Handle odd/even players
+    const matchesPerRound = Math.min(courts, Math.floor(n / 4)); // Matches per court
+
+    const allPlayers = n % 2 === 0 ? [...players] : [...players, { id: 'bye', name: 'Bye' }];
+    const rotatingPlayers = allPlayers.slice(1); // Exclude first player for rotation
+
+    const rounds: Match[][] = [];
 
     for (let round = 0; round < totalRounds; round++) {
       const matches: Match[] = [];
-      const shuffledPlayers = shufflePlayers([...players]);
+      const roundPairings: [Player, Player][] = [];
 
-      for (let i = 0; i < n / 2; i++) {
-        matches.push({
-          id: `match-${round}-${i}`,
-          team1: { players: [shuffledPlayers[i], shuffledPlayers[n - 1 - i]] },
-          team2: { players: [shuffledPlayers[i + 1], shuffledPlayers[n - 2 - i]] },
-          score: { team1: 0, team2: 0 }
-        });
+      // Pair first player with rotating player
+      roundPairings.push([allPlayers[0], rotatingPlayers[round % (n - 1)]]);
+
+      // Pair remaining players
+      for (let i = 1; i < Math.floor(allPlayers.length / 2); i++) {
+        const j = (round + i) % (n - 1);
+        roundPairings.push([rotatingPlayers[j], rotatingPlayers[(n - i + round) % (n - 1)]]);
       }
+
+      // Create matches excluding "bye" players
+      for (let i = 0; i < matchesPerRound && roundPairings.length > 0; i++) {
+        const team1 = roundPairings.shift()!;
+        const team2 = roundPairings.shift()!;
+
+        if (!team1.some(p => p.id === 'bye') && !team2.some(p => p.id === 'bye')) {
+          matches.push({
+            id: `match-${round}-${i}`,
+            team1: { players: team1 },
+            team2: { players: team2 },
+            score: { team1: 0, team2: 0 }
+          });
+        }
+      }
+
       rounds.push(matches);
+      rotatingPlayers.unshift(rotatingPlayers.pop()!); // Rotate players
     }
+
     return rounds;
-  };
+};
+
+
 
   const shufflePlayers = (players: Player[]): Player[] => {
     return [...players].sort(() => Math.random() - 0.5);
   };
 
   const handleCreateTournament = () => {
-    if (name.trim() === '' || parseInt(courts) < 1 || players.length < 4 || parseInt(pointsPerMatch) < 1) {
+    if (name.trim() === '' || parseInt(courts) < 1 || players.length < 3 || parseInt(pointsPerMatch) < 1) {
       Alert.alert('Error', 'Please ensure all fields are filled correctly');
       return;
     }
 
-    const rounds = generateRounds(players);
-    const newTournament: Tournament = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      courts: parseInt(courts),
-      pointsPerMatch: parseInt(pointsPerMatch),
-      players: players,
-      rounds: rounds
-    };
+    try {
+      const rounds = generateRounds(players, parseInt(courts));
+      const newTournament: Tournament = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        courts: parseInt(courts),
+        pointsPerMatch: parseInt(pointsPerMatch),
+        players: players,
+        rounds: rounds
+      };
 
-    dispatch(addTournament(newTournament));
-    navigation.navigate('TournamentView', { tournamentId: newTournament.id });
+      dispatch(addTournament(newTournament));
+      navigation.navigate('TournamentView', { tournamentId: newTournament.id });
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
   };
-
-
 
   // Render individual player items in the list
   const renderPlayerItem = ({ item }: { item: Player }) => (
