@@ -20,17 +20,21 @@ const tournamentSlice = createSlice({
       tournamentId: string;
       roundIndex: number;
       matchId: string;
-      team: 'team1' | 'team2';
+      team1Score: number;
+      team2Score: number;
     }>) => {
-      const { tournamentId, roundIndex, matchId, team } = action.payload;
-      const tournament = state.tournaments.find((t: Tournament) => t.id === tournamentId);
+      const { tournamentId, roundIndex, matchId, team1Score, team2Score } = action.payload;
+      const tournament = state.tournaments.find(t => t.id === tournamentId);
       if (tournament) {
-        const match = tournament.rounds[roundIndex].find((m: Match) => m.id === matchId);
+        const match = tournament.rounds[roundIndex].find(m => m.id === matchId);
         if (match) {
-          match.score[team]++;
+          match.score.team1 = team1Score;
+          match.score.team2 = team2Score;
         }
       }
     }
+
+
   }
 });
 

@@ -36,6 +36,7 @@ export type RootStackParamList = {
   Home: undefined;
   TournamentSetup: undefined;
   TournamentView: { tournamentId: string };
+  Leaderboard: { tournamentId: string };
 };
 
 // Define the navigation prop type for this screen
