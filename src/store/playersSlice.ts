@@ -15,6 +15,7 @@ const playersSlice = createSlice({
     updatePlayerScore: (state, action: PayloadAction<{ id: string; score: number }>) => {
       const player = state.find(p => p.id === action.payload.id);
       if (player) {
+        if (!player.score) player.score = action.payload.score;
         player.score += action.payload.score;
       }
     },
